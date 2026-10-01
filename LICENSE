@@ -1,0 +1,68 @@
+SSH Host Manager Source-Available License, version 1.0
+
+Copyright (c) 2026 ITEAdvisors. All rights reserved.
+
+This is not an open-source license. The source code is published so that you
+can see how the software works. It is not published for reuse.
+
+"The Software" means SSH Host Manager: the source code in this repository and
+the application built from it.
+
+1. What you may do
+
+   a. Read the source code, to check how the Software works.
+
+   b. Download a copy of the source code and compile it, unmodified, into the
+      application, so that you can run exactly what you have read.
+
+   c. Use the application free of charge, for personal use or for the internal
+      use of your organization, whether you obtained it from ITEAdvisors or
+      compiled it yourself under 1b.
+
+2. What you may not do
+
+   a. Modify the Software, or create works based on it.
+
+   b. Copy or use the source code, or any part of it, in any other software,
+      product or service.
+
+   c. Distribute, publish, sublicense, sell, rent or otherwise make available
+      the Software or any part of it, in source or compiled form, modified or
+      not. Sharing a link to this repository is fine.
+
+   d. Remove or change any copyright, license or attribution notice.
+
+   e. Use the names "SSH Host Manager" or "ITEAdvisors" for anything that is
+      not the Software as published by ITEAdvisors.
+
+3. Nothing else is granted
+
+   All rights not expressly granted above are reserved by ITEAdvisors. To do
+   anything this license does not allow, ask ITEAdvisors for written
+   permission first.
+
+   This license does not limit the rights that GitHub's Terms of Service give
+   every GitHub user to view this repository and to fork it within GitHub.
+   A fork is covered by this same license.
+
+4. Third-party components
+
+   The Software is built with third-party libraries, listed in go.mod. They
+   remain under their own licenses, which are not changed by this one.
+
+5. Termination
+
+   Your rights under this license end automatically if you break its terms.
+
+6. No warranty
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+7. Limitation of liability
+
+   IN NO EVENT SHALL ITEADVISORS OR THE AUTHORS BE LIABLE FOR ANY CLAIM,
+   DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+   OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+   USE OF OR OTHER DEALINGS IN THE SOFTWARE.

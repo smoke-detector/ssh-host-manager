@@ -11,7 +11,7 @@ place of the name: `ssh 203.0.113.10 "<command>"`.
 > yourself. The one exception is the donation link, which opens in your browser if you
 > click it, because my AI is breaking my bank.
 
-Made by ITEAdvisors. Free to use. [Donate](https://donate.stripe.com/eVq6oz0LU7ucgX19KE57W00) if it helps you.
+Made by ITEAdvisors. Free to use; the code is free to view but not to reuse (see [License](#license)). [Donate](https://donate.stripe.com/eVq6oz0LU7ucgX19KE57W00) if it helps you.
 
 ![SSH Host Manager](docs/server.png)
 
@@ -58,7 +58,7 @@ the permissions of the config and keys it writes there (ssh refuses them otherwi
 The folder choice is remembered in `%LOCALAPPDATA%\SSHHostManager\settings.json`.
 
 ## Build it yourself
-You are welcome to read the source and build the app for your own use.
+The [license](#license) lets you compile the code, unchanged, to run the app yourself.
 
 1. Install Go 1.26 or newer from https://go.dev/dl. No C compiler is needed.
 2. Get the source: on the repository page choose **Code > Download ZIP** and unzip it,
@@ -97,6 +97,17 @@ instead of the real one. `SSHKEYS_ONEDRIVE_DIR` and `SSHKEYS_DATA_DIR` do the sa
 OneDrive and for the app's settings folder.
 
 Runtime requirements: Windows 10 or 11 with the OpenSSH Client (built in).
+
+## License
+The source code is free to view, not free to reuse. In short:
+
+- You may read the code, and compile it unchanged to run the app yourself.
+- You may use the app free of charge, personally or inside your organization.
+- You may not modify the code, use any of it in other software, or redistribute the
+  code or the app.
+
+The exact terms are in [LICENSE](LICENSE). This is not an open-source license. For
+anything it does not allow, ask ITEAdvisors first.
 
 ## Disclaimer
 - **No warranty.** The app is provided as is, with no warranty of any kind. The author

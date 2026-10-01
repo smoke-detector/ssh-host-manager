@@ -5,3 +5,4 @@ go.mod text eol=lf
 go.sum text eol=lf
 *.png binary
 *.syso binary
+LICENSE text eol=lf

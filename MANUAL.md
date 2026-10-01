@@ -30,7 +30,8 @@ with no password and no prompts. The IP address works in place of the name.
 11. [Privacy and security](#11-privacy-and-security)
 12. [Build it yourself](#12-build-it-yourself)
 13. [Disclaimer](#13-disclaimer)
-14. [Support the app](#14-support-the-app)
+14. [License](#14-license)
+15. [Support the app](#15-support-the-app)
 
 ## 1. What you need
 - Windows 10 or 11.
@@ -204,7 +205,8 @@ or the folder you chose.
 
 ## 12. Build it yourself
 The source code is public so that you can see how the app works, and so that you do not
-have to trust a ready-made file. Building it takes a few minutes.
+have to trust a ready-made file. Building it takes a few minutes. The license lets you
+compile the code as it is; it does not allow changing or reusing it.
 
 1. Install Go 1.26 or newer from https://go.dev/dl. No C compiler is needed.
 2. Get the source: on the repository page choose **Code > Download ZIP** and unzip it,
@@ -238,6 +240,17 @@ you built.
   Microsoft, VMware or any other company named here. Their names are trademarks of
   their owners.
 
-## 14. Support the app
+## 14. License
+The source code is free to view, not free to reuse. In short:
+
+- You may read the code, and compile it unchanged to run the app yourself.
+- You may use the app free of charge, personally or inside your organization.
+- You may not modify the code, use any of it in other software, or redistribute the
+  code or the app.
+
+The exact terms are in the [LICENSE](LICENSE) file. This is not an open-source license. For
+anything it does not allow, ask ITEAdvisors first.
+
+## 15. Support the app
 SSH Host Manager is made by ITEAdvisors and is free. If it saves you time, you can
 [make a donation](https://donate.stripe.com/eVq6oz0LU7ucgX19KE57W00).

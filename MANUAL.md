@@ -43,10 +43,10 @@ with no password and no prompts. The IP address works in place of the name.
 The app does not need administrator rights and should not be run as administrator.
 
 ## 2. Start the app
-Get `SSHHostManager.exe` from the [Releases](../../releases) page of this repository if a download
-is published there, or build it from the source (see the [README](README.md#build)). Then run it.
-There is no installer and nothing else to install. You can
-keep the file anywhere, including inside your `.ssh` folder.
+Download `SSHHostManager.exe` from the [Releases](https://github.com/smoke-detector/ssh-host-manager/releases/latest) page of this
+repository, or build it from the source (see the [README](README.md#build-it-yourself)).
+Then run it. There is no installer and nothing else to install. You can keep the file
+anywhere, including inside your `.ssh` folder.
 
 The first time it starts, the app shows a short notice and asks you to accept it. Nothing
 is contacted before you do. You can read it again later from **Disclaimer** at the

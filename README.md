@@ -17,6 +17,16 @@ Made by ITEAdvisors. Free to use; the code is free to view but not to reuse (see
 
 **[Read the manual](MANUAL.md)**
 
+## Download
+**[Download SSHHostManager.exe](https://github.com/smoke-detector/ssh-host-manager/releases/latest/download/SSHHostManager.exe)**
+for Windows 10 and 11. There is no installer. All versions are on the
+[Releases](https://github.com/smoke-detector/ssh-host-manager/releases) page.
+
+The file is not code-signed yet, so Windows shows "Windows protected your PC" the first
+time: click **More info**, then **Run anyway**. To check that your copy is the published
+one, compare the result of `Get-FileHash .\SSHHostManager.exe` with the SHA-256 in the
+release notes. Or [build it yourself](#build-it-yourself) from the source.
+
 ## What it does
 - Creates a dedicated key for each server and installs it after you type the password once.
 - Works with Linux, macOS, NAS, VMware ESXi, Windows OpenSSH Server, and network devices.

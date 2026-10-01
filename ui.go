@@ -34,7 +34,7 @@ import (
 
 // The promise shown in the window; the manual and README carry the same one.
 const privacyLine = "This app only talks to the servers you add. It does not talk to anything in the cloud or any other service, " +
-	"except the donation link if you click it, because my AI is breaking my bank. The source code is public so anyone can check."
+	"except the donation link if you click it, because my AI is breaking my bank. The source code is public so anyone can check how it works."
 
 // selection is what the right-hand side shows.
 type selection struct {
@@ -182,7 +182,13 @@ func (g *gui) run() error {
 			e.Frame(gtx.Ops)
 			if !g.started {
 				g.started = true
-				go g.autoTest()
+				go func() {
+					// Nothing connects anywhere until the notice has been accepted.
+					if loadSettings().Accepted != noticeVersion {
+						g.notice(true)
+					}
+					g.autoTest()
+				}()
 				go g.watchFiles()
 				if testHook != nil {
 					go testHook(g)
@@ -834,6 +840,17 @@ func (g *gui) sideRows(gtx C) D {
 
 func (g *gui) sideFoot(gtx C) D {
 	ai, cfg, fold, rel, don := g.clk("ai"), g.clk("openConfig"), g.clk("openFolder"), g.clk("reload"), g.clk("donate")
+	src, terms := g.clk("source"), g.clk("terms")
+	if src.Clicked(gtx) {
+		if err := openURL(links["source"]); err != nil {
+			g.try(err)
+		} else {
+			g.toast("Opened the source code page in your web browser", "info")
+		}
+	}
+	if terms.Clicked(gtx) && g.modal == nil {
+		go g.notice(false)
+	}
 	if ai.Clicked(gtx) {
 		g.onCopyAI()
 	}
@@ -913,6 +930,15 @@ func (g *gui) sideFoot(gtx C) D {
 					}),
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{Left: 4, Right: 4, Top: 8}.Layout(gtx, g.txt(10.5, privacyLine, colFaint).Layout)
+					}),
+					layout.Rigid(func(gtx C) D {
+						return layout.Inset{Left: 4, Right: 4, Top: 8}.Layout(gtx, func(gtx C) D {
+							return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+								layout.Rigid(func(gtx C) D { return g.link(gtx, src, icLink, "Source code") }),
+								gap(14),
+								layout.Rigid(func(gtx C) D { return g.link(gtx, terms, icInfo, "Disclaimer") }),
+							)
+						})
 					}),
 				)
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx, kids...)

@@ -594,7 +594,9 @@ func (a *App) setFolder(r FolderReq) error {
 	defer a.mu.Unlock()
 	a.t.use(p)
 	a.pending = map[string][]string{}
-	if err := saveSettings(settings{SSHDir: a.t.Dir}); err != nil {
+	s := loadSettings()
+	s.SSHDir = a.t.Dir
+	if err := saveSettings(s); err != nil {
 		return err
 	}
 	a.linkErr = syncLink(a.t.defaultConfig(), a.t.Config, a.t.linked())

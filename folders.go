@@ -17,7 +17,8 @@ type Folder struct {
 }
 
 type settings struct {
-	SSHDir string `json:"sshDir,omitempty"`
+	SSHDir   string `json:"sshDir,omitempty"`
+	Accepted string `json:"accepted,omitempty"` // version of the first-run notice the user accepted
 }
 
 // dataDir holds the app's own settings.

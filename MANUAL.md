@@ -9,8 +9,9 @@ your PC (Claude, ChatGPT desktop tools, scripts) can run:
 with no password and no prompts. The IP address works in place of the name.
 
 > **This app only talks to the servers you add.** It does not talk to anything in the
-> cloud or any other service. That is why the source code is free to view: anyone can
-> check. The one exception is the donation link, which opens in your browser if you
+> cloud or any other service. The source code is free to view so that you can see for
+> yourself how the app works and that it is secure, and you can build the app from it
+> yourself. The one exception is the donation link, which opens in your browser if you
 > click it, because my AI is breaking my bank.
 
 ![A server that is ready](docs/server.png)
@@ -27,7 +28,9 @@ with no password and no prompts. The IP address works in place of the name.
 9. [Older devices](#9-older-devices)
 10. [When something goes wrong](#10-when-something-goes-wrong)
 11. [Privacy and security](#11-privacy-and-security)
-12. [Support the app](#12-support-the-app)
+12. [Build it yourself](#12-build-it-yourself)
+13. [Disclaimer](#13-disclaimer)
+14. [Support the app](#14-support-the-app)
 
 ## 1. What you need
 - Windows 10 or 11.
@@ -42,6 +45,12 @@ Get `SSHHostManager.exe` from the [Releases](../../releases) page of this reposi
 is published there, or build it from the source (see the [README](README.md#build)). Then run it.
 There is no installer and nothing else to install. You can
 keep the file anywhere, including inside your `.ssh` folder.
+
+The first time it starts, the app shows a short notice and asks you to accept it. Nothing
+is contacted before you do. You can read it again later from **Disclaimer** at the
+bottom left of the window.
+
+![The notice shown at first start](docs/first-run.png)
 
 ![The first screen](docs/welcome.png)
 
@@ -149,6 +158,9 @@ turns off by default. When a login fails for that reason the app says so and off
 **Allow and retry**. You can also set **Encryption** to *Also allow older encryption*
 yourself. The setting applies to that one server only, and the server gets an RSA key.
 
+Older encryption is weaker. It lowers the security of the connection to that device, so
+use it only where the device offers nothing better.
+
 ## 10. When something goes wrong
 | Message | What it means | What to do |
 | --- | --- | --- |
@@ -174,7 +186,12 @@ itself does not contact the payment site.
 
 **Check it yourself.** Open Resource Monitor (search for it in the Start menu), go to
 the **Network** tab and tick `SSHHostManager.exe` and `ssh.exe`. The only addresses you
-will see are the servers in your list.
+will see are the servers in your list. You can also read the source code and
+[build the app yourself](#12-build-it-yourself).
+
+**Two things happen outside the app.** If you enter a hostname instead of an IP
+address, Windows looks the name up through your usual DNS server, as it does for any
+program. If you choose the OneDrive folder, OneDrive, not this app, syncs the files.
 
 **Passwords** are typed into `ssh`'s own terminal window. The app never receives them.
 
@@ -185,6 +202,42 @@ one without touching the others.
 **No administrator rights.** Everything the app changes is inside your own user profile
 or the folder you chose.
 
-## 12. Support the app
+## 12. Build it yourself
+The source code is public so that you can see how the app works, and so that you do not
+have to trust a ready-made file. Building it takes a few minutes.
+
+1. Install Go 1.26 or newer from https://go.dev/dl. No C compiler is needed.
+2. Get the source: on the repository page choose **Code > Download ZIP** and unzip it,
+   or run `git clone https://github.com/smoke-detector/ssh-host-manager`.
+3. Open a terminal in that folder and run:
+
+       go build -trimpath -ldflags "-H windowsgui -s -w" -o SSHHostManager.exe .
+
+4. Run the `SSHHostManager.exe` that appears in the folder.
+
+The first build downloads the drawing toolkit ([Gio](https://gioui.org)) and Go's
+support libraries. Their versions are pinned in `go.mod` and their checksums in `go.sum`,
+so you get exactly the code this repository was tested with.
+
+The README lists what each source file does and how to check what went into the file
+you built.
+
+## 13. Disclaimer
+- **No warranty.** The app is provided as is, with no warranty of any kind. The author
+  is not liable for any damage or loss from using it.
+- **You are responsible for what you allow.** The keys have no passphrase so that AI
+  apps can log in without asking. Anyone, and any AI app, using your Windows account can
+  then run any command on the servers you add, including destructive ones.
+- **Authorized systems only.** Only add servers and devices that you own or are allowed
+  to manage.
+- **Older encryption is weaker.** Allowing it for a device lowers the security of the
+  connection to that device. Use it only where the device offers nothing better.
+- **Donations are voluntary.** A donation is a gift, not a purchase, and comes with no
+  support or service obligation.
+- **Not affiliated.** This app is not affiliated with or endorsed by Anthropic, OpenAI,
+  Microsoft, VMware or any other company named here. Their names are trademarks of
+  their owners.
+
+## 14. Support the app
 SSH Host Manager is made by ITEAdvisors and is free. If it saves you time, you can
 [make a donation](https://donate.stripe.com/eVq6oz0LU7ucgX19KE57W00).

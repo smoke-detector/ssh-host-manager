@@ -7,6 +7,7 @@ package main
 import (
 	"fmt"
 	"image"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -216,6 +217,29 @@ func (g *gui) modalBlock(gtx C, m *modal, b *mblock) D {
 		})
 	}
 	return D{}
+}
+
+// notice shows the disclaimer. On first run it must be accepted before the
+// app does anything; later it can be read again from the corner of the window.
+func (g *gui) notice(first bool) {
+	blocks := make([]mblock, 0, len(noticeText)+1)
+	for _, p := range noticeText {
+		blocks = append(blocks, mblock{kind: "p", text: p})
+	}
+	blocks = append(blocks, mblock{kind: "muted", text: noticeSource})
+	if !first {
+		g.ask(&modal{tone: "warn", icon: icInfo, title: "Disclaimer", blocks: blocks, dismiss: true, buttons: []mbtn{{label: "Close"}}})
+		return
+	}
+	if g.ask(&modal{tone: "warn", icon: icInfo, title: "Before you start", blocks: blocks,
+		buttons: []mbtn{{label: "Quit"}, {label: "I understand", v: "ok", kind: btnPrimary, icon: icCheck}}}).v != "ok" {
+		os.Exit(0)
+	}
+	s := loadSettings()
+	s.Accepted = noticeVersion
+	if err := saveSettings(s); err != nil {
+		g.fail(err)
+	}
 }
 
 // ---------- plumbing between workers and the window ----------

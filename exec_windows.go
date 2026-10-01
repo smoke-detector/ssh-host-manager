@@ -4,8 +4,11 @@ package main
 
 import (
 	"errors"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
+	"strings"
 	"syscall"
 	"time"
 	"unsafe"
@@ -45,6 +48,48 @@ func runInTerminal(exe string, args ...string) (int, error) {
 
 func openFile(path string) error   { return exec.Command("notepad.exe", path).Start() }
 func openFolder(path string) error { return exec.Command("explorer.exe", path).Start() }
+
+// openTerminal starts an interactive command in a console window of its own
+// and does not wait for it. The window closes when the command ends, except
+// when ssh reports a connection error (exit code 255): then it stays so the
+// message can be read.
+//
+// The process is created directly, without the redirected input and output
+// that os/exec would set up, so that ssh gets a real console to talk to.
+func openTerminal(title, exe string, args ...string) error {
+	quote := func(s string) (string, error) {
+		if strings.ContainsAny(s, "\"%\r\n") {
+			return "", errors.New("can't pass " + s + " to a terminal window")
+		}
+		return `"` + s + `"`, nil
+	}
+	line := "title " + title + "& "
+	for _, a := range append([]string{exe}, args...) {
+		q, err := quote(a)
+		if err != nil {
+			return err
+		}
+		line += q + " "
+	}
+	line += "& if errorlevel 255 (echo. & pause)"
+	shell := os.Getenv("ComSpec")
+	if shell == "" {
+		shell = filepath.Join(os.Getenv("WINDIR"), "System32", "cmd.exe")
+	}
+	cl, err := windows.UTF16PtrFromString(`"` + shell + `" /s /c "` + line + `"`)
+	if err != nil {
+		return err
+	}
+	var si windows.StartupInfo
+	var pi windows.ProcessInformation
+	si.Cb = uint32(unsafe.Sizeof(si))
+	if err := windows.CreateProcess(nil, cl, nil, nil, false, windows.CREATE_NEW_CONSOLE|windows.CREATE_UNICODE_ENVIRONMENT, nil, nil, &si, &pi); err != nil {
+		return err
+	}
+	windows.CloseHandle(pi.Thread)
+	windows.CloseHandle(pi.Process)
+	return nil
+}
 
 // openURL hands a web address to the user's default browser.
 func openURL(u string) error {

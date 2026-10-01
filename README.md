@@ -22,6 +22,7 @@ Made by ITEAdvisors. Free to use; the code is free to view but not to reuse (see
 - Works with Linux, macOS, NAS, VMware ESXi, Windows OpenSSH Server, and network devices.
 - Verifies each server's fingerprint before trusting it, and lets you remove host keys
   one at a time.
+- Opens a terminal logged in to a server with one click, for your own use.
 - Keeps everything in standard OpenSSH files (`config`, `known_hosts`, key files), in
   `~/.ssh`, OneDrive, or a folder you pick.
 - Can allow older encryption for one legacy device without weakening the others.

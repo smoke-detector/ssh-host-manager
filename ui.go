@@ -1510,7 +1510,10 @@ func (g *gui) serverView(gtx C) D {
 	case "busy":
 		lead = func(gtx C) D { return g.spinner(gtx, 11) }
 	}
-	actions := []layout.Widget{g.act("test", btnStyle{icon: icZap, label: "Test connection"}, g.onTest)}
+	actions := []layout.Widget{
+		g.act("terminal", btnStyle{icon: icTerm, label: "Open terminal"}, g.onTerminal),
+		g.act("test", btnStyle{icon: icZap, label: "Test connection"}, g.onTest),
+	}
 	if s.Kind == "managed" {
 		actions = append(actions, g.act("delete", btnStyle{kind: btnDanger, icon: icTrash}, g.onDelete))
 	}

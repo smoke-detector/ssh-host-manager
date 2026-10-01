@@ -111,8 +111,15 @@ This works for AI apps that run commands on this PC. A chat in a web browser can
 your keys.
 
 ## 6. Change or delete a server
+- **Log in yourself:** click **Open terminal**. A terminal window opens, logged in to
+  the server with the same key the AI apps use. It closes when you log out, and stays
+  open if the connection fails so that you can read why.
 - **Change:** select the server, edit the **Connection** box, click **Save changes**.
 - **Test:** click **Test connection** at any time.
+- **Edits are used straight away.** If you change something in the Connection box, for
+  example the username, and then click **Install key**, **Test connection**, **Verify
+  host key** or **Open terminal**, the app saves your change first and uses the new
+  value.
 - **Delete:** click the bin icon at the top right. You can delete the key file at the
   same time. The public key stays on the server until you remove it there; to fully
   revoke access, delete its line from the server's `authorized_keys`.

@@ -615,6 +615,18 @@ func uniq(in []string) []string {
 	return out
 }
 
+// terminal opens a console window logged in to the server, for the user's
+// own use. It runs the same "ssh <name>" an AI app would.
+func (a *App) terminal(r AliasReq) error {
+	if _, err := a.findHost(r.Alias); err != nil {
+		return err
+	}
+	if !aliasRe.MatchString(r.Alias) {
+		return errors.New("this name has characters that can't be passed to a terminal window; run ssh " + r.Alias + " yourself")
+	}
+	return openTerminal("ssh "+r.Alias, a.t.SSH, a.t.sshArgs(r.Alias)...)
+}
+
 // openConfig opens the config file in Notepad, creating it first if needed.
 func (a *App) openConfig() error {
 	if !exists(a.t.Config) {

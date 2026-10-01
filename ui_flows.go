@@ -466,9 +466,18 @@ func (g *gui) saveFlow(f formVals) {
 	g.start(status, func() { g.saveAndContinue(f, orig, before, isNew) })
 }
 
-// saveAndContinue saves, then carries on with whatever the server still
-// needs: its fingerprint, a login test, the key install.
-func (g *gui) saveAndContinue(f formVals, orig string, before *ServerView, isNew bool) {
+// pending reports whether the selected server has edits in the form. The
+// buttons that act on a server (test, install, verify, terminal) save those
+// edits first, so they always work with what the form shows, such as a
+// username that was just corrected.
+func (g *gui) pending() bool {
+	s := g.current()
+	return g.sel.kind == "server" && s != nil && s.Kind == "managed" && !g.formLocked && g.dirty()
+}
+
+// saveOnly writes the form to the config and reloads. It returns the saved
+// server's name, or "" when saving failed (the reason has been shown).
+func (g *gui) saveOnly(f formVals, orig string, isNew bool) string {
 	res, err := g.app.save(SaveReq{Original: orig, Alias: f.Alias, Host: f.Host, Port: f.Port, User: f.User,
 		IdentityFile: f.Key, Device: f.Device, Legacy: f.Legacy})
 	if err != nil {
@@ -476,11 +485,11 @@ func (g *gui) saveAndContinue(f formVals, orig string, before *ServerView, isNew
 		if err == errStale {
 			g.reload("", false)
 		}
-		return
+		return ""
 	}
 	if err := g.reload(res.Alias, true); err != nil {
 		g.fail(err)
-		return
+		return ""
 	}
 	g.ui(func() {
 		if res.CreatedKey != "" {
@@ -495,6 +504,17 @@ func (g *gui) saveAndContinue(f formVals, orig string, before *ServerView, isNew
 			g.toast("Saved "+res.Alias, "good")
 		}
 	})
+	return res.Alias
+}
+
+// saveAndContinue saves, then carries on with whatever the server still
+// needs: its fingerprint, a login test, the key install.
+func (g *gui) saveAndContinue(f formVals, orig string, before *ServerView, isNew bool) {
+	alias := g.saveOnly(f, orig, isNew)
+	if alias == "" {
+		return
+	}
+	res := &SaveRes{Alias: alias}
 	s := g.snap(res.Alias)
 	if s == nil {
 		return
@@ -705,7 +725,37 @@ func (g *gui) legacyFlow(alias string) {
 	g.saveAndContinue(f, alias, s, false)
 }
 
+// onTerminal opens a terminal window logged in to the selected server.
+func (g *gui) onTerminal() {
+	s := g.current()
+	if s == nil || s.Kind == "known" {
+		return
+	}
+	if g.pending() {
+		f, orig := g.readForm(), s.Alias
+		g.start("Saving…", func() {
+			if alias := g.saveOnly(f, orig, false); alias != "" {
+				if err := g.app.terminal(AliasReq{Alias: alias}); err != nil {
+					g.fail(err)
+					return
+				}
+				g.notify("Opened a terminal: ssh "+alias, "info")
+			}
+		})
+		return
+	}
+	if err := g.app.terminal(AliasReq{Alias: s.Alias}); err != nil {
+		g.try(err)
+		return
+	}
+	g.toast("Opened a terminal: ssh "+s.Alias, "info")
+}
+
 func (g *gui) onTest() {
+	if g.pending() {
+		g.saveFlow(g.readForm())
+		return
+	}
 	if s := g.current(); s != nil && s.Kind != "known" {
 		alias := s.Alias
 		g.start("", func() { g.testFlow(alias, true) })
@@ -713,6 +763,12 @@ func (g *gui) onTest() {
 }
 
 func (g *gui) onInstall() {
+	if g.pending() {
+		// Saving goes on to test the login and then offers the install, now
+		// for the username and address shown in the form.
+		g.saveFlow(g.readForm())
+		return
+	}
 	if s := g.current(); s != nil && s.Kind != "known" {
 		alias := s.Alias
 		g.start("", func() { g.installFlow(alias) })
@@ -720,6 +776,10 @@ func (g *gui) onInstall() {
 }
 
 func (g *gui) onLegacy() {
+	if g.pending() {
+		g.saveFlow(g.readForm())
+		return
+	}
 	if s := g.current(); s != nil && s.Kind == "managed" {
 		alias := s.Alias
 		g.start("", func() { g.legacyFlow(alias) })
@@ -727,6 +787,10 @@ func (g *gui) onLegacy() {
 }
 
 func (g *gui) onVerify() {
+	if g.pending() {
+		g.saveFlow(g.readForm())
+		return
+	}
 	if s := g.current(); s != nil && s.Kind != "known" {
 		alias, host, port, managed := s.Alias, s.Host, s.Port, s.Kind == "managed"
 		g.start("", func() {
@@ -739,6 +803,10 @@ func (g *gui) onVerify() {
 }
 
 func (g *gui) onRescan() {
+	if g.pending() {
+		g.saveFlow(g.readForm())
+		return
+	}
 	s := g.current()
 	if s == nil {
 		return

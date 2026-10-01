@@ -9,6 +9,7 @@ import (
 	"image/color"
 	"io"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -72,9 +73,13 @@ type gui struct {
 	openSel *selectBox
 	clip    string // text waiting to be put on the clipboard
 	started bool
-	ptr     f32.Point   // where the mouse pointer last was, in window pixels
-	winSize image.Point // the window's drawing area
-	ptrTag  bool
+	// sessionKeys are the keys to lock when the app closes: key file -> the
+	// server name shown for it. closing is set once the user has agreed.
+	sessionKeys map[string]string
+	closing     bool
+	ptr         f32.Point   // where the mouse pointer last was, in window pixels
+	winSize     image.Point // the window's drawing area
+	ptrTag      bool
 
 	search               widget.Editor
 	sideList, mainList   widget.List
@@ -91,7 +96,7 @@ type gui struct {
 }
 
 func newGUI(a *App) *gui {
-	g := &gui{app: a, tests: map[string]TestResult{}, clicks: map[string]*widget.Clickable{}, showOther: true}
+	g := &gui{app: a, tests: map[string]TestResult{}, clicks: map[string]*widget.Clickable{}, showOther: true, sessionKeys: map[string]string{}}
 	g.th = material.NewTheme()
 	g.th.Shaper = text.NewShaper(text.WithCollection(gofont.Collection()))
 	g.th.Face = sans
@@ -174,6 +179,22 @@ func (g *gui) run() error {
 				mainHwnd = e.HWND
 				darkTitleBar(e.HWND)
 			}
+		case *app.ClosingEvent:
+			// Keys unlocked "until I close the app" are locked on the way
+			// out, after telling the user.
+			g.mu.Lock()
+			ask := len(g.sessionKeys) > 0 && !g.closing
+			blocked := g.modal != nil || g.busy
+			if ask && blocked {
+				g.toast("Finish or cancel the current step before closing", "info")
+			}
+			g.mu.Unlock()
+			if ask {
+				e.Abort()
+				if !blocked {
+					go g.closeFlow()
+				}
+			}
 		case app.DestroyEvent:
 			return e.Err
 		case app.FrameEvent:
@@ -187,6 +208,7 @@ func (g *gui) run() error {
 					if loadSettings().Accepted != noticeVersion {
 						g.notice(true)
 					}
+					g.lockLeftovers()
 					g.autoTest()
 				}()
 				go g.watchFiles()
@@ -320,6 +342,8 @@ func (g *gui) statusOf(s *ServerView) (tone, label string) {
 		return "warn", "Host key missing"
 	case s.Kind == "managed" && !s.KeyExists:
 		return "warn", "Key file missing"
+	case s.KeyLock == lockLocked:
+		return "warn", "Key locked"
 	case t.Kind == "ok":
 		return "good", "Ready"
 	case t.Kind == "auth":
@@ -1182,10 +1206,27 @@ func (g *gui) accessCard(gtx C, s *ServerView) D {
 		if s.KeyType != "" {
 			d += "  ·  " + strings.ToUpper(s.KeyType)
 		}
-		rows = append(rows, func(gtx C) D {
-			return g.stepRow(gtx, "good", "Key file", d,
-				g.act("copyPub", btnStyle{kind: btnGhost, small: true, icon: icCopy, label: "Copy public key"}, func() { g.onCopyPub(a) }))
-		})
+		tone, title := "good", "Key file"
+		copyPub := g.act("copyPub", btnStyle{kind: btnGhost, small: true, icon: icCopy, label: "Copy public key"}, func() { g.onCopyPub(a) })
+		pass := g.act("pass", btnStyle{kind: btnGhost, small: true, icon: icLock, label: "Passphrase"}, g.onPassphrase)
+		acts := []layout.Widget{copyPub, pass}
+		switch s.KeyLock {
+		case lockNone:
+			d += "  ·  no passphrase"
+		case lockLocked:
+			tone, title = "warn", "Key is locked"
+			d += "  ·  has a passphrase. AI apps can't use it until you unlock it."
+			acts = []layout.Widget{pass, g.act("unlock", btnStyle{kind: btnPrimary, small: true, icon: icUnlock, label: "Unlock"}, g.onUnlock)}
+		case lockUnlocked:
+			title = "Key file, unlocked"
+			if _, session := g.sessionKeys[filepath.Clean(s.KeyPath)]; session {
+				d += "  ·  unlocked until you close this app"
+			} else {
+				d += "  ·  unlocked until you lock it"
+			}
+			acts = []layout.Widget{copyPub, pass, g.act("lock", btnStyle{small: true, icon: icLock, label: "Lock"}, g.onLock)}
+		}
+		rows = append(rows, func(gtx C) D { return g.stepRow(gtx, tone, title, d, acts...) })
 	default:
 		var acts []layout.Widget
 		if s.Kind == "managed" {

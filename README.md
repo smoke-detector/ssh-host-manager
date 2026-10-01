@@ -23,6 +23,9 @@ Made by ITEAdvisors. Free to use; the code is free to view but not to reuse (see
 - Verifies each server's fingerprint before trusting it, and lets you remove host keys
   one at a time.
 - Opens a terminal logged in to a server with one click, for your own use.
+- Lets you put a passphrase on a key and lock or unlock it, with the state shown as
+  soon as the app opens. The passphrase is typed into ssh's own window; the app never
+  sees or stores it.
 - Keeps everything in standard OpenSSH files (`config`, `known_hosts`, key files), in
   `~/.ssh`, OneDrive, or a folder you pick.
 - Can allow older encryption for one legacy device without weakening the others.
@@ -49,8 +52,10 @@ program. If you choose the OneDrive folder, OneDrive, not this app, syncs the fi
   Each server is written as `Host <name> <address>`, so both forms use the key.
 - `known_hosts`: host keys are shown, verified by fingerprint before trusting,
   replaced when a server changes, and cleaned up when a server is deleted or moved.
-- Per-server keys (`id_ed25519_<name>` or `id_rsa_<name>`), no passphrase so apps can
-  use them unattended.
+- Per-server keys (`id_ed25519_<name>` or `id_rsa_<name>`), with no passphrase by
+  default so apps can use them unattended. A key can be given a passphrase; it is then
+  unlocked through Windows' own ssh-agent, which holds the unlocked key. The app keeps
+  only the list of key files to lock again when it closes.
 
 When the app works in a folder other than `%USERPROFILE%\.ssh`, it adds a small
 `# >>> SSH Server Manager: app folder` block with an `Include` line at the top of
@@ -90,6 +95,7 @@ if you change `winres/winres.json` or the icons do you need to regenerate it:
 | `tools.go` | Running `ssh`, `ssh-keygen`, `ssh-keyscan`; the key-install commands |
 | `sshconfig.go`, `knownhosts.go` | Reading and writing the OpenSSH files |
 | `folders.go` | Which folder the app works in |
+| `keylock.go`, `ui_keylock.go` | Keys with a passphrase: status, unlock, lock |
 | `ui.go`, `ui_kit.go`, `ui_flows.go` | The window, its controls, and what the buttons do |
 | `exec_windows.go` | Terminal window, folder chooser, file permissions |
 

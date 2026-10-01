@@ -19,6 +19,13 @@ type Folder struct {
 type settings struct {
 	SSHDir   string `json:"sshDir,omitempty"`
 	Accepted string `json:"accepted,omitempty"` // version of the first-run notice the user accepted
+	// UnlockUntil is the last choice made when unlocking a key: "close" (lock
+	// it again when the app closes) or "keep" (until the user locks it).
+	UnlockUntil string `json:"unlockUntil,omitempty"`
+	// SessionKeys are the key files to lock when the app closes. They are
+	// file paths, never key material or passphrases. The list is kept on disk
+	// so that keys left unlocked by a crash are locked at the next start.
+	SessionKeys []string `json:"sessionKeys,omitempty"`
 }
 
 // dataDir holds the app's own settings.

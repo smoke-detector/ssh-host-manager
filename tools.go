@@ -18,6 +18,7 @@ import (
 
 type Tools struct {
 	SSH, Keygen, Keyscan string
+	Add                  string // ssh-add; empty when it isn't installed
 	// Default is the folder ssh itself reads (~/.ssh). Dir is the folder the
 	// app works in; when the two differ, Default's config links to Dir's.
 	Default            string
@@ -52,9 +53,13 @@ func newTools() (*Tools, error) {
 	if t.Keyscan, err = findExe("ssh-keyscan"); err != nil {
 		return nil, err
 	}
+	t.Add, _ = findExe("ssh-add")
 	t.Default = filepath.Join(homeDir(), ".ssh")
 	if d := os.Getenv("SSHKEYS_SSH_DIR"); d != "" {
 		t.Default, t.Dev = d, true
+	}
+	if d := os.Getenv("SSHKEYS_SSH_ADD"); d != "" && t.Dev {
+		t.Add = d // a stand-in agent for tests
 	}
 	if err := os.MkdirAll(t.Default, 0o700); err != nil {
 		return nil, err

@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
@@ -22,10 +23,11 @@ import (
 // ---------- dialog ----------
 
 type mblock struct {
-	kind string // p, muted, keys, code, mono, check, wait
+	kind string // p, muted, keys, code, mono, check, choice, wait
 	text string
 	keys []OfferedKey
-	tags bool // keys: mark the new ones
+	tags bool     // keys: mark the new ones
+	opts []string // choice: one line per option
 }
 
 type mbtn struct {
@@ -37,6 +39,7 @@ type mbtn struct {
 type modalResult struct {
 	v       string
 	checked bool
+	choice  int
 }
 
 type modal struct {
@@ -47,7 +50,10 @@ type modal struct {
 	buttons []mbtn
 	dismiss bool // Escape or a click outside answers ""
 
+	choice int // which option of a choice block is selected
+
 	done   chan modalResult
+	opts   []widget.Clickable
 	clicks []widget.Clickable
 	check  widget.Bool
 	copyB  widget.Clickable
@@ -60,7 +66,7 @@ func (g *gui) answer(v string, checked bool) {
 	if m := g.modal; m != nil {
 		g.modal = nil
 		if m.done != nil {
-			m.done <- modalResult{v, checked}
+			m.done <- modalResult{v, checked, m.choice}
 		}
 	}
 }
@@ -209,6 +215,40 @@ func (g *gui) modalBlock(gtx C, m *modal, b *mblock) D {
 				return cb.Layout(gtx)
 			})
 		})
+	case "choice":
+		if len(m.opts) < len(b.opts) {
+			m.opts = make([]widget.Clickable, len(b.opts))
+		}
+		for i := range b.opts {
+			if m.opts[i].Clicked(gtx) {
+				m.choice = i
+			}
+		}
+		return layout.Inset{Top: 2, Bottom: 12}.Layout(gtx, func(gtx C) D {
+			var rows []layout.FlexChild
+			for i, o := range b.opts {
+				if i > 0 {
+					rows = append(rows, gap(6))
+				}
+				rows = append(rows, layout.Rigid(func(gtx C) D {
+					on := m.choice == i
+					border, ic, col := colLine2, icRadio, colMuted
+					if on {
+						border, ic, col = colAccent, icRadioOn, colAccent
+					}
+					return m.opts[i].Layout(gtx, func(gtx C) D {
+						pointer.CursorPointer.Add(gtx.Ops)
+						gtx.Constraints.Min.X = gtx.Constraints.Max.X
+						return box{bg: colInset, border: border, radius: 10, in: layout.Inset{Left: 10, Right: 12, Top: 9, Bottom: 9}}.Layout(gtx, func(gtx C) D {
+							return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+								layout.Rigid(func(gtx C) D { return g.icon(gtx, ic, 18, col) }), gap(10),
+								layout.Flexed(1, g.txt(13, o, rgb(0xc3c9d4)).Layout))
+						})
+					})
+				}))
+			}
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, rows...)
+		})
 	case "wait":
 		return pad.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
@@ -340,7 +380,7 @@ func (g *gui) autoTest() {
 	var aliases []string
 	g.ui(func() {
 		for _, s := range g.data.Servers {
-			if s.Kind == "managed" && len(s.HostKeys) > 0 && s.KeyExists {
+			if s.Kind == "managed" && len(s.HostKeys) > 0 && s.KeyExists && s.KeyLock != lockLocked {
 				aliases = append(aliases, s.Alias)
 			}
 		}
@@ -407,6 +447,7 @@ func (g *gui) onCopyPub(alias string) {
 
 func (g *gui) onCopyAI() {
 	var lines []string
+	agentKeys := false
 	for i := range g.data.Servers {
 		s := &g.data.Servers[i]
 		if s.Kind == "known" {
@@ -420,15 +461,29 @@ func (g *gui) onCopyAI() {
 		case tone == "bad" || tone == "warn":
 			flag = " (currently not working: " + strings.ToLower(label) + ")"
 		}
+		switch s.KeyLock {
+		case lockLocked:
+			flag = " (key is locked: ask me to unlock it in SSH Host Manager first)"
+			agentKeys = true
+		case lockUnlocked:
+			agentKeys = true
+		}
 		lines = append(lines, "- "+s.Alias+": "+target(s)+flag)
 	}
 	if len(lines) == 0 {
 		g.toast("Add a server first", "info")
 		return
 	}
-	g.copy("I have SSH access set up from this computer to the servers below. Run commands with `ssh <name> \"<command>\"`; "+
-		"the IP address works in place of the name. Logins use keys, so there are no password or host-key prompts.\n\n"+
-		strings.Join(lines, "\n")+"\n", "Copied. Paste it into Claude or ChatGPT.")
+	text := "I have SSH access set up from this computer to the servers below. Run commands with `ssh <name> \"<command>\"`; " +
+		"the IP address works in place of the name. Logins use keys, so there are no password or host-key prompts.\n\n" +
+		strings.Join(lines, "\n") + "\n"
+	if agentKeys {
+		// Keys with a passphrase are held by Windows' ssh-agent, which the ssh
+		// that ships with Git cannot reach.
+		text += "\nSome of these keys have a passphrase and are held by Windows' ssh-agent. Use Windows' own ssh for them, by its full path: `" +
+			g.app.t.SSH + " <name> \"<command>\"`. The ssh that comes with Git cannot reach that agent. Never ask me for a passphrase.\n"
+	}
+	g.copy(text, "Copied. Paste it into Claude or ChatGPT.")
 }
 
 func (g *gui) onDonate() {

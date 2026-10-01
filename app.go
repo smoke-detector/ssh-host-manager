@@ -36,6 +36,7 @@ type ServerView struct {
 	KeyPath      string    `json:"keyPath"`
 	KeyExists    bool      `json:"keyExists"`
 	KeyType      string    `json:"keyType"`
+	KeyLock      string    `json:"keyLock"` // none, locked, unlocked; empty when there is no key file
 	Device       string    `json:"device"`
 	Legacy       bool      `json:"legacy"`
 	Extra        []string  `json:"extra"`
@@ -58,6 +59,7 @@ type StateView struct {
 	KnownPath  string       `json:"knownPath"`
 	Home       string       `json:"home"`
 	LocalUser  string       `json:"localUser"`
+	AgentOn    bool         `json:"agentOn"` // Windows' ssh-agent is running
 	Folders    []Folder     `json:"folders"`
 	Linked     bool         `json:"linked"`
 	LinkError  string       `json:"linkError"`
@@ -113,6 +115,8 @@ func (a *App) state() (*StateView, error) {
 	}
 	used := map[string]bool{}
 	usedFp := map[string]bool{}
+	var agentFps map[string]bool // asked for only when a key has a passphrase
+	agentAsked := false
 	for _, h := range hosts {
 		kind := "config"
 		if h.Managed {
@@ -125,6 +129,19 @@ func (a *App) state() (*StateView, error) {
 			v.KeyPath = expandHome(h.IdentityFile)
 			v.KeyExists = exists(v.KeyPath) && exists(v.KeyPath+".pub")
 			v.KeyType = keyKind(v.KeyPath + ".pub")
+			if v.KeyExists {
+				v.KeyLock = lockNone
+				if a.t.hasPassphrase(v.KeyPath) {
+					if !agentAsked {
+						agentFps, sv.AgentOn = a.t.agentKeys()
+						agentAsked = true
+					}
+					v.KeyLock = lockLocked
+					if fp := pubFingerprint(v.KeyPath + ".pub"); fp != "" && agentFps[fp] {
+						v.KeyLock = lockUnlocked
+					}
+				}
+			}
 		}
 		v.HostKeys = a.hostKeysFor(kh, h.HostName, h.Port)
 		if v.HostKeys == nil {

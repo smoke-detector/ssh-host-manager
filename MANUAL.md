@@ -26,12 +26,13 @@ with no password and no prompts. The IP address works in place of the name.
 7. [Host keys](#7-host-keys)
 8. [Where your files are kept](#8-where-your-files-are-kept)
 9. [Older devices](#9-older-devices)
-10. [When something goes wrong](#10-when-something-goes-wrong)
-11. [Privacy and security](#11-privacy-and-security)
-12. [Build it yourself](#12-build-it-yourself)
-13. [Disclaimer](#13-disclaimer)
-14. [License](#14-license)
-15. [Support the app](#15-support-the-app)
+10. [Keys with a passphrase](#10-keys-with-a-passphrase)
+11. [When something goes wrong](#11-when-something-goes-wrong)
+12. [Privacy and security](#12-privacy-and-security)
+13. [Build it yourself](#13-build-it-yourself)
+14. [Disclaimer](#14-disclaimer)
+15. [License](#15-license)
+16. [Support the app](#16-support-the-app)
 
 ## 1. What you need
 - Windows 10 or 11.
@@ -169,17 +170,61 @@ yourself. The setting applies to that one server only, and the server gets an RS
 Older encryption is weaker. It lowers the security of the connection to that device, so
 use it only where the device offers nothing better.
 
-## 10. When something goes wrong
+## 10. Keys with a passphrase
+The keys the app creates have no passphrase, so that AI apps can use them at any time.
+If you would rather protect a key, you can give it a passphrase. The key is then
+**locked** until you unlock it, and you decide for how long it stays unlocked.
+
+The **Key file** line in the *Access* box shows the state as soon as you open the app:
+
+| It says | Meaning |
+| --- | --- |
+| no passphrase | Anyone using your Windows account can use the key at any time. |
+| Key is locked | The key has a passphrase. AI apps and `ssh` can't use it until you unlock it. |
+| Key file, unlocked | The key has a passphrase and is unlocked, until you close the app or until you lock it. |
+
+![A key that is unlocked until the app closes](docs/unlocked.png)
+
+- **Passphrase** adds, changes or removes the passphrase. A terminal window opens and
+  `ssh-keygen` asks for it. Leave the new passphrase empty to remove it.
+- **Unlock** opens a terminal window where you type the passphrase, and asks how long the
+  key should stay unlocked. The app remembers your last choice.
+  - *Until I close this app:* closing the app locks the key again. The app tells you so
+    before it closes.
+  - *Until I lock it myself:* the key stays unlocked after the app closes, and after a
+    restart of the computer.
+- **Lock** locks the key straight away. No passphrase is needed for that.
+
+![Choosing how long a key stays unlocked](docs/unlock-dialog.png)
+
+Things to know:
+
+- **The app never sees your passphrase.** You type it into `ssh`'s own terminal window.
+  The app does not ask for it, remember it or store it.
+- **An unlocked key is held by Windows.** The OpenSSH Authentication Agent, a service
+  that is part of Windows, keeps the unlocked key, protected for your Windows account,
+  until it is locked again. This app does not hold it.
+- **The agent is switched off on most computers.** The first time you unlock a key the
+  app offers to turn it on. Windows asks for administrator permission, once.
+- **AI apps must use Windows' own `ssh`.** The `ssh` that comes with Git cannot reach
+  an unlocked key. **Copy server list for AI** tells the AI which one to use.
+- **If the app or the computer stops unexpectedly,** keys that were unlocked "until I
+  close this app" are locked the next time the app starts.
+- **A forgotten passphrase cannot be recovered.** Create a new key for the server in
+  the **Key file** list and install it again.
+
+## 11. When something goes wrong
 | Message | What it means | What to do |
 | --- | --- | --- |
 | Couldn't reach … | No answer on that address and port. | Check the address, that the device is on, that SSH is enabled, and that your VPN is connected. Then click **Try again** or **Verify host key**. |
 | Key not installed | The server still asks for a password. | Click **Install key** and type the password in the terminal window. |
 | Host key rejected / changed | The server's identity is not trusted or is different. | Click **Verify host key** and compare the fingerprint. |
 | Needs older encryption | The device is too old for the defaults. | Click **Allow older encryption**. |
+| Key locked | The key has a passphrase and is not unlocked. | Click **Unlock** and type the passphrase in the terminal window. See [Keys with a passphrase](#10-keys-with-a-passphrase). |
 | Key file is missing | The key file was moved or deleted. | Click **Create key**, then install it again. |
 | ssh can't see this folder yet | The `Include` line could not be written. | Check that `C:\Users\<you>\.ssh\config` is not read-only. |
 
-## 11. Privacy and security
+## 12. Privacy and security
 **What the app connects to.** Only the servers you add, on the port you set, using
 the `ssh`, `ssh-keygen` and `ssh-keyscan` programs that come with Windows. It has no
 accounts, no analytics, no update checks and no cloud service. The source code is
@@ -195,22 +240,24 @@ itself does not contact the payment site.
 **Check it yourself.** Open Resource Monitor (search for it in the Start menu), go to
 the **Network** tab and tick `SSHHostManager.exe` and `ssh.exe`. The only addresses you
 will see are the servers in your list. You can also read the source code and
-[build the app yourself](#12-build-it-yourself).
+[build the app yourself](#13-build-it-yourself).
 
 **Two things happen outside the app.** If you enter a hostname instead of an IP
 address, Windows looks the name up through your usual DNS server, as it does for any
 program. If you choose the OneDrive folder, OneDrive, not this app, syncs the files.
 
-**Passwords** are typed into `ssh`'s own terminal window. The app never receives them.
+**Passwords and passphrases** are typed into `ssh`'s own terminal window. The app never
+receives them and has nothing to remember or store.
 
-**Keys have no passphrase** so that AI apps can use them unattended. Anyone who can use
-your Windows account can use them. Each server gets its own key so that you can revoke
+**Keys have no passphrase by default** so that AI apps can use them unattended. Anyone
+who can use your Windows account can use them. You can add a passphrase and unlock the
+key only when you want it used: see [Keys with a passphrase](#10-keys-with-a-passphrase). Each server gets its own key so that you can revoke
 one without touching the others.
 
 **No administrator rights.** Everything the app changes is inside your own user profile
 or the folder you chose.
 
-## 12. Build it yourself
+## 13. Build it yourself
 The source code is public so that you can see how the app works, and so that you do not
 have to trust a ready-made file. Building it takes a few minutes. The license lets you
 compile the code as it is; it does not allow changing or reusing it.
@@ -231,7 +278,7 @@ so you get exactly the code this repository was tested with.
 The README lists what each source file does and how to check what went into the file
 you built.
 
-## 13. Disclaimer
+## 14. Disclaimer
 - **No warranty.** The app is provided as is, with no warranty of any kind. The author
   is not liable for any damage or loss from using it.
 - **You are responsible for what you allow.** The keys have no passphrase so that AI
@@ -247,7 +294,7 @@ you built.
   Microsoft, VMware or any other company named here. Their names are trademarks of
   their owners.
 
-## 14. License
+## 15. License
 The source code is free to view, not free to reuse. In short:
 
 - You may read the code, and compile it unchanged to run the app yourself.
@@ -258,6 +305,6 @@ The source code is free to view, not free to reuse. In short:
 The exact terms are in the [LICENSE](LICENSE) file. This is not an open-source license. For
 anything it does not allow, ask ITEAdvisors first.
 
-## 15. Support the app
+## 16. Support the app
 SSH Host Manager is made by ITEAdvisors and is free. If it saves you time, you can
 [make a donation](https://donate.stripe.com/eVq6oz0LU7ucgX19KE57W00).

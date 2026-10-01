@@ -107,6 +107,10 @@ var (
 	icDot     = mustIcon(icons.ImageLens)
 	icLink    = mustIcon(icons.ContentLink)
 	icHeart   = mustIcon(icons.ActionFavorite)
+	icLock    = mustIcon(icons.ActionLock)
+	icUnlock  = mustIcon(icons.ActionLockOpen)
+	icRadioOn = mustIcon(icons.ToggleRadioButtonChecked)
+	icRadio   = mustIcon(icons.ToggleRadioButtonUnchecked)
 )
 
 // ---------- shapes ----------

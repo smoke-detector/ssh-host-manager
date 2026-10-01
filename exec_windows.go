@@ -4,6 +4,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -53,10 +54,31 @@ func openFolder(path string) error { return exec.Command("explorer.exe", path).S
 // and does not wait for it. The window closes when the command ends, except
 // when ssh reports a connection error (exit code 255): then it stays so the
 // message can be read.
+func openTerminal(title, exe string, args ...string) error {
+	return console(title, 255, false, exe, args...)
+}
+
+// runConsole runs a command that talks to the user (ssh-add, ssh-keygen) in a
+// console window of its own and waits until that window has closed. The window
+// stays open after an error so the message can be read.
+func runConsole(title, exe string, args ...string) error {
+	return console(title, 1, true, exe, args...)
+}
+
+// elevate runs a command as administrator. Windows asks the user first.
+func elevate(exe, args string) error {
+	verb, _ := windows.UTF16PtrFromString("runas")
+	file, _ := windows.UTF16PtrFromString(exe)
+	arg, _ := windows.UTF16PtrFromString(args)
+	return windows.ShellExecute(windows.Handle(mainHwnd), verb, file, arg, nil, 0)
+}
+
+// console starts a command in a new console window. The window pauses before
+// closing when the command's exit code is pauseFrom or higher.
 //
 // The process is created directly, without the redirected input and output
-// that os/exec would set up, so that ssh gets a real console to talk to.
-func openTerminal(title, exe string, args ...string) error {
+// that os/exec would set up, so that the command gets a real console to talk to.
+func console(title string, pauseFrom int, wait bool, exe string, args ...string) error {
 	quote := func(s string) (string, error) {
 		if strings.ContainsAny(s, "\"%\r\n") {
 			return "", errors.New("can't pass " + s + " to a terminal window")
@@ -71,7 +93,7 @@ func openTerminal(title, exe string, args ...string) error {
 		}
 		line += q + " "
 	}
-	line += "& if errorlevel 255 (echo. & pause)"
+	line += fmt.Sprintf("& if errorlevel %d (echo. & pause)", pauseFrom)
 	shell := os.Getenv("ComSpec")
 	if shell == "" {
 		shell = filepath.Join(os.Getenv("WINDIR"), "System32", "cmd.exe")
@@ -87,7 +109,10 @@ func openTerminal(title, exe string, args ...string) error {
 		return err
 	}
 	windows.CloseHandle(pi.Thread)
-	windows.CloseHandle(pi.Process)
+	defer windows.CloseHandle(pi.Process)
+	if wait {
+		windows.WaitForSingleObject(pi.Process, windows.INFINITE)
+	}
 	return nil
 }
 

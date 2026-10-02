@@ -3,7 +3,7 @@
   "RT_MANIFEST": {
     "#1": {
       "0409": {
-        "identity": { "name": "ITEAdvisors.SSHHostManager", "version": "1.1.0.0" },
+        "identity": { "name": "ITEAdvisors.SSHHostManager", "version": "1.1.1.0" },
         "description": "SSH Host Manager",
         "minimum-os": "win10",
         "execution-level": "as invoker",
@@ -16,13 +16,13 @@
   "RT_VERSION": {
     "#1": {
       "0000": {
-        "fixed": { "file_version": "1.1.0.0", "product_version": "1.1.0.0" },
+        "fixed": { "file_version": "1.1.1.0", "product_version": "1.1.1.0" },
         "info": { "0409": {
           "FileDescription": "SSH Host Manager - passwordless SSH for AI apps",
-          "FileVersion": "1.1.0",
+          "FileVersion": "1.1.1",
           "CompanyName": "ITEAdvisors",
           "ProductName": "SSH Host Manager",
-          "ProductVersion": "1.1.0",
+          "ProductVersion": "1.1.1",
           "OriginalFilename": "SSHHostManager.exe"
         } }
       }

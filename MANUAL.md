@@ -128,6 +128,11 @@ your keys.
 Entries in your SSH config that the app did not create appear under *Other config
 hosts*. Select one and click **Manage with this app** to bring it under the app.
 
+For those entries a username typed in the Connection box is not saved, because saving
+would take the entry over. **Open terminal** and **Test connection** use the name you
+typed for that one go, so they no longer fall back to your Windows account name. Click
+**Manage with this app** to keep the name.
+
 ## 7. Host keys
 A host key is the server's identity. `ssh` refuses to connect when it does not match
 what you trusted, which protects you from connecting to an impostor.

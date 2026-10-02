@@ -577,7 +577,10 @@ func (a *App) install(r AliasReq) error {
 	return nil
 }
 
-// pubkey returns the public key line to paste into a device by hand.
+// pubkey returns the public key to paste into a device by hand, as
+// "<type> <key>". The label at the end of the key file is left out: it is not
+// part of the key, and pasted into a device it looks like part of the line and
+// gets trimmed from the wrong end (a FortiGate rejects it as an invalid key).
 func (a *App) pubkey(r AliasReq) (string, error) {
 	h, err := a.findHost(r.Alias)
 	if err != nil {
@@ -586,11 +589,7 @@ func (a *App) pubkey(r AliasReq) (string, error) {
 	if h.IdentityFile == "" {
 		return "", errors.New("this server has no key file set")
 	}
-	data, err := os.ReadFile(expandHome(h.IdentityFile) + ".pub")
-	if err != nil {
-		return "", fmt.Errorf("public key not found: %s.pub", h.IdentityFile)
-	}
-	return strings.TrimSpace(string(data)), nil
+	return readPub(expandHome(h.IdentityFile) + ".pub")
 }
 
 type FolderReq struct {
@@ -632,16 +631,46 @@ func uniq(in []string) []string {
 	return out
 }
 
+// TerminalReq asks for a terminal logged in to a server.
+type TerminalReq struct {
+	Alias string `json:"alias"`
+	// User is the account to log in as, for this terminal only. It is set for
+	// entries the app doesn't manage: the name typed in the window can't be
+	// saved for them without taking the entry over, but the terminal must still
+	// use it and not fall back to the Windows account name.
+	User string `json:"user"`
+}
+
+// terminalArgs is what ssh is started with for a terminal.
+func terminalArgs(alias, user string) ([]string, error) {
+	if !aliasRe.MatchString(alias) {
+		return nil, errors.New("this name has characters that can't be passed to a terminal window; run ssh " + alias + " yourself")
+	}
+	if user == "" {
+		return []string{alias}, nil
+	}
+	if !userRe.MatchString(user) {
+		return nil, errors.New("enter a valid username")
+	}
+	return []string{"-l", user, alias}, nil
+}
+
 // terminal opens a console window logged in to the server, for the user's
 // own use. It runs the same "ssh <name>" an AI app would.
-func (a *App) terminal(r AliasReq) error {
-	if _, err := a.findHost(r.Alias); err != nil {
+func (a *App) terminal(r TerminalReq) error {
+	h, err := a.findHost(r.Alias)
+	if err != nil {
 		return err
 	}
-	if !aliasRe.MatchString(r.Alias) {
-		return errors.New("this name has characters that can't be passed to a terminal window; run ssh " + r.Alias + " yourself")
+	user := strings.TrimSpace(r.User)
+	if user == h.User {
+		user = "" // the config already says so
 	}
-	return openTerminal("ssh "+r.Alias, a.t.SSH, a.t.sshArgs(r.Alias)...)
+	args, err := terminalArgs(r.Alias, user)
+	if err != nil {
+		return err
+	}
+	return openTerminal("ssh "+r.Alias, a.t.SSH, a.t.sshArgs(args...)...)
 }
 
 // openConfig opens the config file in Notepad, creating it first if needed.

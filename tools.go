@@ -239,8 +239,9 @@ func (t *Tools) ensureKey(path, alias, kind string) (bool, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return false, err
 	}
-	host, _ := os.Hostname()
-	comment := sanitize("sshkeys-" + alias + "@" + host)
+	// The label only names the server. It does not include this PC's name,
+	// which would otherwise be copied to every server the key is installed on.
+	comment := sanitize("sshkeys-" + alias)
 	typeArgs := []string{"-t", "ed25519"}
 	if kind == "rsa" {
 		typeArgs = []string{"-t", "rsa", "-b", "3072"}
@@ -287,11 +288,26 @@ type TestResult struct {
 	Message string `json:"message"`
 }
 
-func (t *Tools) test(alias string) TestResult {
+func (t *Tools) test(alias string) TestResult { return t.testAs(alias, "") }
+
+// testArgs is what ssh is started with to try a passwordless login. A user
+// name is given for entries the app doesn't manage, whose name typed in the
+// window can't be saved.
+func testArgs(alias, user string) []string {
 	// LogLevel=VERBOSE makes ssh say "Authenticated to ...", which is the only
 	// dependable sign on devices that have no "echo" command.
-	r, err := run(25*time.Second, t.SSH, t.sshArgs("-o", "BatchMode=yes", "-o", "ConnectTimeout=8",
-		"-o", "StrictHostKeyChecking=yes", "-o", "LogLevel=VERBOSE", alias, "echo SSHKEYS_OK")...)
+	args := []string{"-o", "BatchMode=yes", "-o", "ConnectTimeout=8", "-o", "StrictHostKeyChecking=yes", "-o", "LogLevel=VERBOSE"}
+	if user != "" {
+		args = append(args, "-l", user)
+	}
+	return append(args, alias, "echo SSHKEYS_OK")
+}
+
+func (t *Tools) testAs(alias, user string) TestResult {
+	if user != "" && !userRe.MatchString(user) {
+		return TestResult{"error", "Enter a valid username"}
+	}
+	r, err := run(25*time.Second, t.SSH, t.sshArgs(testArgs(alias, user)...)...)
 	switch {
 	case strings.Contains(r.Out, "SSHKEYS_OK") || strings.Contains(r.Out, "Authenticated to "):
 		return TestResult{"ok", "Logged in with the key, no password or prompts."}

@@ -137,7 +137,7 @@ func main() {
 	g.apply(sv, "", true)
 	go func() {
 		g.w = new(app.Window)
-		g.w.Option(app.Title(appName), app.Size(1200, 800), app.MinSize(980, 660))
+		g.w.Option(app.Title(appName+" "+appVersion), app.Size(1200, 800), app.MinSize(980, 660))
 		err := g.run()
 		if err != nil {
 			fatalBox(err.Error())
@@ -204,12 +204,13 @@ func (g *gui) run() error {
 			if !g.started {
 				g.started = true
 				go func() {
-					// Nothing connects anywhere until the notice has been accepted.
+					// Nothing runs until the notice has been accepted. No server
+					// is logged in to at start: that happens only when the user
+					// asks (Test connection, Retest) or in a flow they started.
 					if loadSettings().Accepted != noticeVersion {
 						g.notice(true)
 					}
 					g.lockLeftovers()
-					g.autoTest()
 				}()
 				go g.watchFiles()
 				if testHook != nil {
@@ -661,7 +662,13 @@ func (g *gui) sidebar(gtx C) D {
 					gap(12),
 					layout.Rigid(func(gtx C) D {
 						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-							layout.Rigid(g.txt(15, appName, colText, bold).Layout),
+							layout.Rigid(func(gtx C) D {
+								return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
+									layout.Rigid(g.txt(15, appName, colText, bold).Layout),
+									gap(6),
+									layout.Rigid(g.txt(12, appVersion, colMuted).Layout),
+								)
+							}),
 							layout.Rigid(g.txt(12, "Passwordless SSH for your AI apps", colMuted).Layout),
 						)
 					}),

@@ -8,6 +8,11 @@ import (
 
 const appName = "SSH Host Manager"
 
+// appVersion is shown after the name in the window. Keep it in step with the
+// version in winres/winres.json (which the exe's file properties show) and in
+// store/AppxManifest.xml, which uses it with a fourth part of 0.
+const appVersion = "1.1.1"
+
 // sourceURL is where anyone can read this code and build the app themselves.
 const sourceURL = "https://github.com/smoke-detector/ssh-host-manager"
 

@@ -9,7 +9,6 @@ import (
 	"image"
 	"os"
 	"strings"
-	"sync"
 	"time"
 
 	"gioui.org/io/pointer"
@@ -375,36 +374,6 @@ func (g *gui) watchFiles() {
 	}
 }
 
-// autoTest checks every server that is fully set up, a few at a time.
-func (g *gui) autoTest() {
-	var aliases []string
-	g.ui(func() {
-		for _, s := range g.data.Servers {
-			if s.Kind == "managed" && len(s.HostKeys) > 0 && s.KeyExists && s.KeyLock != lockLocked {
-				aliases = append(aliases, s.Alias)
-			}
-		}
-	})
-	queue := make(chan string, len(aliases))
-	for _, a := range aliases {
-		queue <- a
-	}
-	close(queue)
-	var wg sync.WaitGroup
-	for i := 0; i < 4; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for alias := range queue {
-				g.ui(func() { g.tests[alias] = TestResult{Kind: "checking"} })
-				r := g.app.t.test(alias)
-				g.ui(func() { g.tests[alias] = r })
-			}
-		}()
-	}
-	wg.Wait()
-}
-
 // ---------- selection and form buttons (g.mu held) ----------
 
 func (g *gui) onAdd() {
@@ -666,12 +635,18 @@ func (g *gui) verifyHostKey(host, port string, managed, quiet bool) string {
 
 // testFlow tries a passwordless login. With offer set it goes on to whatever
 // the result calls for.
-func (g *gui) testFlow(alias string, offer bool) TestResult {
+func (g *gui) testFlow(alias string, offer bool) TestResult { return g.testFlowAs(alias, "", offer) }
+
+// testFlowAs is testFlow with a login name for this one attempt (see boxUser).
+func (g *gui) testFlowAs(alias, user string, offer bool) TestResult {
 	g.ui(func() {
 		g.tests[alias] = TestResult{Kind: "checking"}
 		g.status = "Testing the login to " + alias + "…"
+		if user != "" {
+			g.status = "Testing the login to " + alias + " as " + user + "…"
+		}
 	})
-	r := g.app.t.test(alias)
+	r := g.app.t.testAs(alias, user)
 	g.ui(func() {
 		g.tests[alias] = r
 		g.status = ""
@@ -790,7 +765,7 @@ func (g *gui) onTerminal() {
 		f, orig := g.readForm(), s.Alias
 		g.start("Saving…", func() {
 			if alias := g.saveOnly(f, orig, false); alias != "" {
-				if err := g.app.terminal(AliasReq{Alias: alias}); err != nil {
+				if err := g.app.terminal(TerminalReq{Alias: alias}); err != nil {
 					g.fail(err)
 					return
 				}
@@ -799,11 +774,32 @@ func (g *gui) onTerminal() {
 		})
 		return
 	}
-	if err := g.app.terminal(AliasReq{Alias: s.Alias}); err != nil {
+	user := g.boxUser(s)
+	if err := g.app.terminal(TerminalReq{Alias: s.Alias, User: user}); err != nil {
 		g.try(err)
 		return
 	}
+	if user != "" {
+		g.toast("Opened a terminal as "+user+". The name isn't saved: use Manage with this app to keep it.", "info")
+		return
+	}
 	g.toast("Opened a terminal: ssh "+s.Alias, "info")
+}
+
+// boxUser is the username typed in the Connection box when the buttons can't
+// save it. For an entry the app doesn't manage, saving would take the entry
+// over, so Open terminal and Test connection use the typed name for that one go
+// instead of falling back to the Windows account name. Managed entries are
+// saved first (see pending), so this is empty for them.
+func (g *gui) boxUser(s *ServerView) string {
+	if s.Kind != "config" || g.formLocked {
+		return ""
+	}
+	u := strings.TrimSpace(g.fUser.Text())
+	if u == "" || u == s.User {
+		return ""
+	}
+	return u
 }
 
 func (g *gui) onTest() {
@@ -812,8 +808,8 @@ func (g *gui) onTest() {
 		return
 	}
 	if s := g.current(); s != nil && s.Kind != "known" {
-		alias := s.Alias
-		g.start("", func() { g.testFlow(alias, true) })
+		alias, user := s.Alias, g.boxUser(s)
+		g.start("", func() { g.testFlowAs(alias, user, true) })
 	}
 }
 
@@ -1036,6 +1032,5 @@ func (g *gui) onFolder(path string) {
 			return
 		}
 		g.notify("Now using "+configPathFor(path), "good")
-		go g.autoTest()
 	})
 }
